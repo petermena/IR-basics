@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interventional Radiology: The Basics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Serene Blue and Neutral Gray -->
+    <!-- Application Structure Plan: The application is structured as a single-page, vertically scrolling educational guide. This linear, top-to-bottom flow is intuitive for users learning a new topic. It starts with a general introduction, then logically progresses through the core tools of IR: needles, wires, and catheters/sheaths. Key concepts like the French scale are given their own dedicated, interactive sections to ensure comprehension. The structure uses a single-column layout for mobile and a two-column grid for larger screens in specific sections to present related text and visuals side-by-side, enhancing understanding. The primary interaction is scrolling, supplemented by interactive calculators and clickable tabs, which allow users to explore specific data points without leaving the flow of the page. This design avoids complex navigation, making it ideal for presenting foundational knowledge clearly and accessibly. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Needle Gauge Sizes -> Goal: Compare -> Viz/Presentation: Interactive Bar Chart (Chart.js) -> Interaction: Hover to see exact mm values. -> Justification: A bar chart provides an immediate visual comparison of outer diameters, which is more impactful than a simple table. The interactivity on hover gives precise data without cluttering the initial view.
+        - Report Info: French Scale -> Goal: Explain -> Viz/Presentation: Interactive Calculator (HTML/JS) -> Interaction: User inputs French size, sees mm equivalent. -> Justification: An interactive tool engages the user and solidifies their understanding of the conversion (Fr/3 = mm) far better than static text.
+        - Report Info: Sheath vs. Catheter Sizing -> Goal: Clarify Difference -> Viz/Presentation: Diagram using HTML/CSS/Tailwind -> Interaction: Side-by-side visual comparison with explanatory text updated by JS. -> Justification: A visual diagram is essential to explain the concept that a sheath's French size refers to its inner diameter while a catheter's refers to its outer. This is a common point of confusion that a static description alone cannot easily resolve.
+        - Report Info: Catheter Types -> Goal: Organize/Inform -> Viz/Presentation: Tabbed content cards (HTML/CSS/JS) -> Interaction: Clicking a catheter name reveals its image and description. -> Justification: A tabbed interface organizes a large amount of information compactly. It allows users to focus on one catheter type at a time, preventing information overload and making the content easily digestible.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #1e293b; /* slate-800 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        .tab-button.active {
+            background-color: #334155; /* slate-700 */
+            color: #ffffff;
+        }
+        .tab-button {
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        }
+        .diagram-outer {
+            border: 2px solid #64748b; /* slate-500 */
+            background-color: #f1f5f9; /* slate-100 */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .diagram-inner {
+            background-color: #cbd5e1; /* slate-300 */
+            border-radius: 50%;
+            position: absolute;
+        }
+        .diagram-label {
+            position: absolute;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-800">Interventional Radiology Fundamentals</h1>
+            <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">An interactive guide to the essential tools of IR: needles, guidewires, catheters, and sheaths.</p>
+        </header>
+
+        <main class="space-y-16">
+
+            <!-- Section: Introduction -->
+            <section id="introduction">
+                <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                    <h2 class="text-2xl font-bold text-slate-700 mb-4">What is Interventional Radiology?</h2>
+                    <p class="text-slate-600 leading-relaxed">
+                        Interventional Radiology (IR) is a medical sub-specialty of radiology which utilizes minimally-invasive image-guided procedures to diagnose and treat diseases in nearly every organ system. The core of IR involves guiding small instruments like catheters, wires, and needles through the body under imaging guidance (like X-rays or CT scans). Understanding the tools is the first step to understanding IR. This guide focuses on the fundamental sizing conventions you'll encounter every day.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Section: Needle Sizes -->
+            <section id="needles">
+                <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                    <h2 class="text-2xl font-bold text-slate-700 mb-2">Needle Sizing: The Gauge System</h2>
+                     <p class="text-slate-600 leading-relaxed mb-6">
+                        Access needles are the entry point for most IR procedures. Their size is measured in 'Gauge' (G). A key, and often counter-intuitive, point is that a **higher gauge number means a smaller needle diameter**. This section visualizes the relationship between gauge and the actual outer diameter of the needle in millimeters. Hover over the bars to see the precise measurement.
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="needleChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Guidewire Sizes -->
+            <section id="wires">
+                <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                    <h2 class="text-2xl font-bold text-slate-700 mb-2">Guidewire Sizing: Inches Matter</h2>
+                    <p class="text-slate-600 leading-relaxed mb-6">
+                        Guidewires are used to navigate the body's vessels and pathways. Their diameter is almost always measured in **thousandths of an inch**. For example, a "0.035" wire is 0.035 inches in diameter. This is a critical measurement, as the wire must be compatible with the inner diameter of the needle and catheter being used. A standard 18G needle, for instance, can accommodate up to a 0.038" wire.
+                    </p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100">
+                                    <th class="p-3 font-semibold text-slate-700 border-b">Common Wire Size (inches)</th>
+                                    <th class="p-3 font-semibold text-slate-700 border-b">Diameter (mm)</th>
+                                    <th class="p-3 font-semibold text-slate-700 border-b">Typical Use Case</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-3 border-b border-slate-200">0.014"</td>
+                                    <td class="p-3 border-b border-slate-200">0.36 mm</td>
+                                    <td class="p-3 border-b border-slate-200">Coronary / Small vessel intervention</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-3 border-b border-slate-200">0.018"</td>
+                                    <td class="p-3 border-b border-slate-200">0.46 mm</td>
+                                    <td class="p-3 border-b border-slate-200">Small vessel access, tibial work</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-3 border-b border-slate-200">0.035"</td>
+                                    <td class="p-3 border-b border-slate-200">0.89 mm</td>
+                                    <td class="p-3 border-b border-slate-200">Standard for most vascular procedures</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-3 border-b border-slate-200">0.038"</td>
+                                    <td class="p-3 border-b border-slate-200">0.97 mm</td>
+                                    <td class="p-3 border-b border-slate-200">Largest size for standard 18G needles</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Section: French Size -->
+            <section id="french-scale">
+                <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-700 mb-2">The French Scale (Fr)</h2>
+                            <p class="text-slate-600 leading-relaxed mb-4">
+                                Catheters and sheaths are measured using the French scale. Unlike the gauge system, a **larger French number means a larger diameter**. The conversion is simple: divide the French size by 3 to get the outer diameter in millimeters.
+                            </p>
+                            <p class="text-slate-600 leading-relaxed font-semibold mb-6">
+                                Formula: $Diameter (mm) = Fr / 3$
+                            </p>
+                            
+                            <div class="mt-4">
+                                <label for="frenchInput" class="block text-sm font-medium text-slate-700">Enter French (Fr) size:</label>
+                                <input type="number" id="frenchInput" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="e.g., 6">
+                                <p class="mt-2 text-lg text-slate-800 font-semibold">Equivalent Diameter: <span id="mmOutput" class="text-blue-600">-- mm</span></p>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 p-6 rounded-lg">
+                            <h3 class="text-lg font-bold text-slate-700 mb-4">Sheath vs. Catheter Sizing: A Crucial Difference</h3>
+                            <p class="text-slate-600 leading-relaxed mb-4">
+                                This is a vital concept. For a given French size, a sheath and a catheter have different meanings:
+                            </p>
+                            <ul class="space-y-3">
+                                <li class="flex items-start">
+                                    <span class="text-blue-500 font-bold mr-2 mt-1">&#10148;</span>
+                                    <div><strong class="text-slate-800">Catheter:</strong> The French size refers to its <strong class="text-red-600">OUTER diameter</strong>. A 5Fr catheter is 1.67 mm on the outside.</div>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-blue-500 font-bold mr-2 mt-1">&#10148;</span>
+                                    <div><strong class="text-slate-800">Sheath:</strong> The French size refers to its usable <strong class="text-green-600">INNER diameter</strong>. A 5Fr sheath is designed to easily pass a 5Fr catheter. Its outer diameter will be larger (e.g., 6-7Fr).</div>
+                                </li>
+                            </ul>
+                            <p class="text-slate-600 mt-4 leading-relaxed">The diagram illustrates this. Notice the sheath has a thicker wall to accommodate the device it's meant to introduce.</p>
+                             <div class="mt-6 flex justify-around items-center h-48">
+                                <!-- Catheter Diagram -->
+                                <div class="flex flex-col items-center">
+                                    <p class="font-bold mb-2">5Fr Catheter</p>
+                                    <div class="diagram-outer" style="width: 100px; height: 100px;">
+                                        <div class="diagram-label" style="color: #c2410c;">OD: 1.67mm</div>
+                                    </div>
+                                </div>
+                                <!-- Sheath Diagram -->
+                                <div class="flex flex-col items-center">
+                                    <p class="font-bold mb-2">5Fr Sheath</p>
+                                    <div class="diagram-outer" style="width: 120px; height: 120px;">
+                                         <div class="diagram-inner" style="width: 100px; height: 100px;"></div>
+                                         <div class="diagram-label" style="color: #166534; top: 40%;">ID: 1.67mm</div>
+                                         <div class="diagram-label" style="color: #c2410c; top: -20px;">OD: ~2.0mm</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Section: Catheter Types -->
+            <section id="catheters">
+                <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                    <h2 class="text-2xl font-bold text-slate-700 mb-2">Common Catheter Types</h2>
+                    <p class="text-slate-600 leading-relaxed mb-6">Catheters come in many shapes, each designed for a specific purpose, such as navigating a particular vessel anatomy or delivering a therapeutic agent. Their shape helps steer the catheter to the target location. Below are some of the most common non-occlusive catheters used for diagnostic angiography and vessel selection. Click on a name to see its shape and description.</p>
+                    
+                    <div class="mb-6 border-b border-slate-300">
+                        <div class="flex flex-wrap -mb-px" id="catheter-tabs">
+                            <button data-target="pigtail" class="tab-button active text-sm font-medium px-4 py-2 rounded-t-lg">Pigtail</button>
+                            <button data-target="simm" class="tab-button text-sm font-medium px-4 py-2 rounded-t-lg">Simmons</button>
+                            <button data-target="h1" class="tab-button text-sm font-medium px-4 py-2 rounded-t-lg">Headhunter (H1)</button>
+                            <button data-target="vertebral" class="tab-button text-sm font-medium px-4 py-2 rounded-t-lg">Vertebral</button>
+                        </div>
+                    </div>
+
+                    <div id="catheter-content" class="min-h-[250px]">
+                        <div id="pigtail" class="catheter-pane grid md:grid-cols-3 gap-6 items-center">
+                            <div class="md:col-span-1 flex justify-center p-4">
+                                <img src="https://placehold.co/200x200/e2e8f0/334155?text=Pigtail+Shape" alt="Pigtail Catheter Shape" class="rounded-lg object-contain">
+                            </div>
+                            <div class="md:col-span-2">
+                                <h3 class="text-xl font-bold text-slate-700 mb-2">Pigtail Catheter</h3>
+                                <p class="text-slate-600 leading-relaxed">Characterized by the loop at its tip, which has multiple side holes. This design allows for the injection of a large volume of contrast dye at a high rate with less risk of vessel injury, as the force is dispersed. It's the workhorse for aortograms and large-vessel angiography.</p>
+                            </div>
+                        </div>
+                         <div id="simm" class="catheter-pane hidden grid md:grid-cols-3 gap-6 items-center">
+                            <div class="md:col-span-1 flex justify-center p-4">
+                                <img src="https://placehold.co/200x200/e2e8f0/334155?text=Simmons+Shape" alt="Simmons Catheter Shape" class="rounded-lg object-contain">
+                            </div>
+                            <div class="md:col-span-2">
+                                <h3 class="text-xl font-bold text-slate-700 mb-2">Simmons (Sim) Catheter</h3>
+                                <p class="text-slate-600 leading-relaxed">Has a highly curved, complex shape designed to select sharply downward-facing vessels, particularly the cerebral arteries. It often needs to be "reformed" within a larger vessel like the aorta to achieve its intended shape before it can be used for vessel selection.</p>
+                            </div>
+                        </div>
+                         <div id="h1" class="catheter-pane hidden grid md:grid-cols-3 gap-6 items-center">
+                            <div class="md:col-span-1 flex justify-center p-4">
+                                <img src="https://placehold.co/200x200/e2e8f0/334155?text=H1+Shape" alt="Headhunter Catheter Shape" class="rounded-lg object-contain">
+                            </div>
+                             <div class="md:col-span-2">
+                                <h3 class="text-xl font-bold text-slate-700 mb-2">Headhunter (H1) Catheter</h3>
+                                <p class="text-slate-600 leading-relaxed">This catheter has a simpler curve than a Simmons and is another common choice for neuro-interventional procedures. It is used to select the great vessels branching off the aortic arch, such as the brachiocephalic, carotid, and subclavian arteries. Its shape is often referred to as a "Berenstein" curve.</p>
+                            </div>
+                        </div>
+                        <div id="vertebral" class="catheter-pane hidden grid md:grid-cols-3 gap-6 items-center">
+                            <div class="md:col-span-1 flex justify-center p-4">
+                                <img src="https://placehold.co/200x200/e2e8f0/334155?text=Vertebral+Shape" alt="Vertebral Catheter Shape" class="rounded-lg object-contain">
+                            </div>
+                            <div class="md:col-span-2">
+                                <h3 class="text-xl font-bold text-slate-700 mb-2">Vertebral Catheter</h3>
+                                <p class="text-slate-600 leading-relaxed">As its name suggests, this catheter is specifically designed with a gentle reverse curve to help select the vertebral arteries, which branch off the subclavian arteries at a specific angle. It's an excellent choice for navigating this particular part of the anatomy with stability.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="text-center mt-16 pt-8 border-t border-slate-200">
+            <p class="text-slate-500">This guide provides a simplified overview for educational purposes. Always refer to manufacturer specifications and clinical guidelines in practice.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // Needle Chart
+            const needleData = {
+                labels: ['18G', '19G', '20G', '21G', '22G', '25G'],
+                datasets: [{
+                    label: 'Outer Diameter (mm)',
+                    data: [1.27, 1.07, 0.91, 0.81, 0.71, 0.51],
+                    backgroundColor: 'rgba(51, 65, 85, 0.8)', // slate-700
+                    borderColor: 'rgba(51, 65, 85, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            };
+
+            const needleConfig = {
+                type: 'bar',
+                data: needleData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'x',
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Needle Gauge vs. Outer Diameter (mm)',
+                            font: { size: 16 },
+                            color: '#334155' // slate-700
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` ${context.dataset.label}: ${context.raw} mm`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Needle Gauge',
+                                font: { size: 14 },
+                                color: '#475569' // slate-600
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                             title: {
+                                display: true,
+                                text: 'Outer Diameter (mm)',
+                                font: { size: 14 },
+                                color: '#475569' // slate-600
+                            }
+                        }
+                    }
+                }
+            };
+
+            const needleChartCanvas = document.getElementById('needleChart');
+            if(needleChartCanvas) {
+                new Chart(needleChartCanvas, needleConfig);
+            }
+
+            // French to MM converter
+            const frenchInput = document.getElementById('frenchInput');
+            const mmOutput = document.getElementById('mmOutput');
+            if(frenchInput) {
+                frenchInput.addEventListener('input', function() {
+                    const frenchValue = parseFloat(this.value);
+                    if (!isNaN(frenchValue) && frenchValue > 0) {
+                        const mmValue = frenchValue / 3;
+                        mmOutput.textContent = `${mmValue.toFixed(2)} mm`;
+                    } else {
+                        mmOutput.textContent = '-- mm';
+                    }
+                });
+            }
+            
+            // Catheter Tabs
+            const tabsContainer = document.getElementById('catheter-tabs');
+            if(tabsContainer) {
+                const tabButtons = tabsContainer.querySelectorAll('.tab-button');
+                const catheterPanes = document.querySelectorAll('.catheter-pane');
+                
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        tabButtons.forEach(btn => btn.classList.remove('active'));
+                        this.classList.add('active');
+                        
+                        const targetId = this.dataset.target;
+                        
+                        catheterPanes.forEach(pane => {
+                            if (pane.id === targetId) {
+                                pane.classList.remove('hidden');
+                            } else {
+                                pane.classList.add('hidden');
+                            }
+                        });
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>
